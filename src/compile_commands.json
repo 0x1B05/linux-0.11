@@ -1,0 +1,458 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-Iinclude",
+      "-c",
+      "-o",
+      "init/main.o",
+      "init/main.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src",
+    "file": "/home/ethan/workspace/linux0.11/src/init/main.c",
+    "output": "/home/ethan/workspace/linux0.11/src/init/main.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "sched.o",
+      "sched.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/sched.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/sched.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "traps.o",
+      "traps.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/traps.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/traps.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "fork.o",
+      "fork.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/fork.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/fork.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "panic.o",
+      "panic.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/panic.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/panic.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "printk.o",
+      "printk.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/printk.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/printk.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "vsprintf.o",
+      "vsprintf.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/vsprintf.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/vsprintf.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "sys.o",
+      "sys.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/sys.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/sys.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "exit.o",
+      "exit.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/exit.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/exit.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "signal.o",
+      "signal.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/signal.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/signal.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "mktime.o",
+      "mktime.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/mktime.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/mktime.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "who.o",
+      "who.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/kernel",
+    "file": "/home/ethan/workspace/linux0.11/src/kernel/who.c",
+    "output": "/home/ethan/workspace/linux0.11/src/kernel/who.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "memory.o",
+      "memory.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/mm",
+    "file": "/home/ethan/workspace/linux0.11/src/mm/memory.c",
+    "output": "/home/ethan/workspace/linux0.11/src/mm/memory.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "open.o",
+      "open.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/open.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/open.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "read_write.o",
+      "read_write.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/read_write.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/read_write.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "inode.o",
+      "inode.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/inode.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/inode.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "file_table.o",
+      "file_table.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/file_table.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/file_table.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "buffer.o",
+      "buffer.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/buffer.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/buffer.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "super.o",
+      "super.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/super.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/super.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "block_dev.o",
+      "block_dev.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/block_dev.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/block_dev.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "char_dev.o",
+      "char_dev.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/char_dev.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/char_dev.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "file_dev.o",
+      "file_dev.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/file_dev.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/file_dev.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "stat.o",
+      "stat.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/stat.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/stat.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/gcc",
+      "-g",
+      "-m32",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fomit-frame-pointer",
+      "-fstrength-reduce",
+      "-I../include",
+      "-c",
+      "-o",
+      "exec.o",
+      "exec.c"
+    ],
+    "directory": "/home/ethan/workspace/linux0.11/src/fs",
+    "file": "/home/ethan/workspace/linux0.11/src/fs/exec.c",
+    "output": "/home/ethan/workspace/linux0.11/src/fs/exec.o"
+  }
+]
