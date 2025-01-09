@@ -2,14 +2,13 @@
 
 = 读硬盘数据全流程
 
-如果要设计一个函数将数据从硬盘加载到内存
+== `sys_read`: 将数据从硬盘加载到内存
 
-通过加载根文件系统和打开文件的操作，已经可以很方便地通过一个文件描述符 `fd`，寻找到存储在硬盘中的一个文件了，再具体点就是知道这个文件在硬盘中的哪几个扇区中。
-
-设计这个函数第一个要指定的参数就可以是 `fd` 了，它仅仅是个数字。得告诉这个函数，把这个 `fd` 指向的硬盘中的文件，复制到内存中的哪个位置，复制多大。内存中的位置，我们用一个表示地址值的参数 `buf`，复制多大，我们用 `count` 来表示，单位是字节。那这个函数就可以设计为。
+通过加载根文件系统和打开文件的操作，已经可以方便地通过一个文件描述符 `fd`，寻找到存储在硬盘中的一个文件了，就是知道这个文件在硬盘中的哪几个扇区中。
 
 #figure(
 ```c
+// 把这个fd指向的硬盘中的文件，复制count字节到内存中的buf。
 int sys_read(unsigned int fd,char * buf,int count) {
     ...
 }
@@ -17,7 +16,7 @@ int sys_read(unsigned int fd,char * buf,int count) {
 caption: [sys_read]
 )
 
-Linux 0.11 读操作的系统调用入口函数，在 `read_write.c` 这个文件里。
+这就是 Linux 0.11 读操作的系统调用入口函数，在 `read_write.c` 这个文件里。
 
 #figure(
 ```c
@@ -87,11 +86,7 @@ int sys_read(unsigned int fd,char * buf,int count) {
 caption: [sys_read - 简化版]
 )
 
-这个函数将管道文件、字符设备文件、块设备文件、目录文件、普通文件分别指向了不同的具体实现。
-
-姑且仅仅关注最常用的，读取目录文件或普通文件，并且不考虑读取的字节数大于文件本身大小这种不合理情况。
-
-再简化下代码。
+这个函数将管道文件、字符设备文件、块设备文件、目录文件、普通文件分别指向了不同的具体实现。这里姑且仅仅关注最常用的，读取目录文件或普通文件，并且不考虑读取的字节数大于文件本身大小这种不合理情况，再简化下代码。
 
 #figure(
 ```c
@@ -137,7 +132,7 @@ caption: [verify_area]
 
 `addr` 就是刚刚的 `buf`，`size` 就是刚刚的 `count`。然后这里又将 `addr` 赋值给了 `start` 变量。所以代码开始，`start` 就表示要复制到的内存的起始地址，`size` 就是要复制的字节数。
 
-这段代码很简单，但需要了解内存的分段和分页机制。
+这里需要回顾Linux 0.11里内存的分段和分页机制。
 
 Linux 0.11 对内存是以 4K 为一页单位来划分内存的，所以内存看起来就是一个个 4K 的小格子。
 #figure(caption: [])[#image("images/chapter40-1.png", width: 30%)]
@@ -149,33 +144,19 @@ Linux 0.11 对内存是以 4K 为一页单位来划分内存的，所以内存�
 // fork.c
 void verify_area(void * addr,int size) {
     ...
+    // 将start和size按页对齐。
     size += start & 0xfff;
     start &= 0xfffff000;
+    // 再加上每个进程的不同数据段基址
+    // 具体说来就是加上当前进程 LDT 中的数据段的段基址
+    start += get_base(current->ldt[2]);
     ...
 }
 ```,
 caption: [verify_area - part1]
 )
 
-就是将 `start` 和 `size` 按页对齐。
-
-然后，又由于每个进程有不同的数据段基址，所以还要加上它。
-
-#figure(
-```c
-// fork.c
-void verify_area(void * addr,int size) {
-    ...
-    start += get_base(current->ldt[2]);
-    ...
-}
-```,
-caption: [verify_area - part2]
-)
-
-具体说来就是加上当前进程的局部描述符表 LDT 中的数据段的段基址。
-
-#figure(caption: [])[#image("images/chapter40-2.png", width: 70%)]
+#figure(caption: [])[#image("images/chapter40-2.png", width: 60%)]
 
 每个进程的 `LDT` 表，由 Linux 创建进程时的代码给规划好了。具体说来，就是如上图所示，每个进程的线性地址范围，是 `(进程号)*64M ~  (进程号+1)*64M`
 
@@ -195,12 +176,12 @@ void verify_area(void * addr,int size) {
     }
 }
 ```,
-caption: [verify_area - part3]
+caption: [verify_area - part2]
 )
 
-#figure(caption: [])[#image("images/chapter40-3.png", width: 60%)]
+#figure(caption: [])[#image("images/chapter40-3.png", width: 50%)]
 
-这些 `write_verify` 将会对这些页进行写页面验证，如果页面存在但不可写，则执行 `un_wp_page` 复制页面。
+这些 `write_verify` 将会对这些页进行写页面验证，如果页面存在但不可写，则执行 `un_wp_page` 复制页面(取消页面的写保护，即写时复制的原理)。
 
 #figure(
 ```c
@@ -219,11 +200,9 @@ void write_verify(unsigned long address) {
 caption: [write_verify]
 )
 
-那个 `un_wp_page` 意思就是取消页面的写保护，就是写时复制的原理
+== 执行`file_read`读操作
 
-== 执行读操作 `file_read`
-
-页校验完之后，就调用 `file_read` 函数了。
+页校验完之后，就调用 `file_read` 函数。
 
 #figure(
 ```c
@@ -265,13 +244,14 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
 caption: [file_read]
 )
 
-整体看，就是一个 `while` 循环，每次读入一个块的数据，直到入参所要求的大小全部读完为止。 `while` 去掉，简化起来就是这样。
+就是一个 `while` 循环，每次读入一个块的数据，直到入参所要求的大小全部读完为止。 `while` 去掉，简化一下。
 
 #figure(
 ```c
 // file_dev.c
 int file_read(struct m_inode * inode, struct file * filp, char * buf, int count) {
     ...
+    // inode->i_dev设备号, nr块号
     int nr = bmap(inode,(filp->f_pos)/BLOCK_SIZE);
     struct buffer_head *bh=bread(inode->i_dev,nr);
     ...
@@ -284,7 +264,7 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
 caption: [file_read - 简化版]
 )
 
-首先 `bmap` 获取全局数据块号，然后 `bread` 将数据块的数据复制到缓冲区，然后 `put_fs_byte` 再一个字节一个字节地将缓冲区数据复制到用户指定的内存中。
+首先 `bmap` 获取全局数据块号，然后 `bread` 将数据块的数据从硬盘设备复制到缓冲区，然后 `put_fs_byte` 再以字节为单位将缓冲区数据复制到用户指定的内存的`buf`中。
 
 === `bmap`：获取全局的数据块号
 
@@ -298,7 +278,7 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
     int nr = bmap(inode,(filp->f_pos)/BLOCK_SIZE);
     ...}
 
-// inode.c 
+// inode.c
 int bmap(struct m_inode * inode,int block) {
     return _bmap(inode,block,0);
 }
@@ -346,7 +326,7 @@ static int _bmap(struct m_inode * inode,int block,int create) {
 caption: [bmap - 直接索引]
 )
 
-由于 create = 0，也就是并不需要创建一个新的数据块，所以里面的 if 分支也没了。
+由于 `create==0`，也就是并不需要创建一个新的数据块，所以里面的 if 分支也没了。
 
 #figure(
 ```c
@@ -365,9 +345,9 @@ caption: [bmap - 直接索引返回]
 
 `bmap` 返回的，就是要读入的块号，从全局看在块设备的哪个逻辑块号下。即假如我想要读这个文件的第一个块号的数据，该函数返回的事你这个文件的第一个块在整个硬盘中的哪个块中。
 
-=== `bread`：将 `bmap` 获取的数据块号读入到高速缓冲块
+=== `bread`：读入到高速缓冲块
 
-拿到这个数据块号后，回到 `file_read` 函数接着看。
+回到 `file_read` 函数接着看，将`bmap`获取的数据块号对应数据块读入到高速缓冲块
 
 #figure(
 ```c
@@ -379,15 +359,8 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
             if (!(bh=bread(inode->i_dev,nr)))
     }
 }
-```,
-caption: [file_read - bmap]
-)
-
-`nr` 就是具体的数据块号，作为其中其中一个参数，传入下一个函数 `bread`。`bread` 这个方法的入参除了数据块号 `block`（就是刚刚传入的 `nr`）外，还有 `inode` 结构中的 `i_dev`，表示设备号。
-
-#figure(
-```c
 // buffer.c
+// dev设备号(inode->i), block数据块号(nr)
 struct buffer_head * bread(int dev,int block) {
     struct buffer_head * bh = getblk(dev,block);
     if (bh->b_uptodate)
@@ -482,7 +455,7 @@ caption: [getblk]
 
 经过 `getblk` 之后，就在内存中找到了一处缓冲块，用来接下来存储硬盘中指定数据块的数据。
 
-=== `ll_rw_block`:把硬盘中的数据复制到
+=== `ll_rw_block`:把硬盘中的数据读取到`buf`
 
 #figure(
 ```c
@@ -500,7 +473,7 @@ void ll_rw_block (int rw, struct buffer_head *bh) {
 
 struct request request[NR_REQUEST] = {0};
 static void make_request(int major,int rw, struct buffer_head * bh) {
-    struct request *req;    
+    struct request *req;
     ...
     // 从 request 队列找到一个空位
     if (rw == READ)
@@ -557,7 +530,7 @@ caption: [ll_rw_block]
 
 #figure(caption: [])[#image("images/chapter40-8.png", width: 70%)]
 
-request 的具体结构是。
+`request` 的具体结构是。
 
 #figure(
 ```c
@@ -583,7 +556,7 @@ caption: [struct request]
 
 有了这些参数，底层方法拿到这个结构之后，就知道怎么样访问硬盘了。那是谁不断从这个 `request` 队列中取出 `request` 结构并对硬盘发起读请求操作的呢？这里 Linux 0.11 有个很巧妙的设计。
 
-注意到 add_request 方法有如下分支。
+注意到 `add_request` 方法有如下分支。
 
 #figure(
 ```c
@@ -623,9 +596,7 @@ static void add_request (struct blk_dev_struct *dev, struct request *req) {
 caption: [add_request - part1]
 )
 
-就是当设备的当前请求项为空，也就是第一次收到硬盘操作请求时，会立即执行该设备的 `request_fn` 方法。当前设备的设备号是 3，也就是硬盘，会从 `blk_dev` 数组中取索引下标为 3 的设备结构。
-
-在 `hd_init` 的时候，设备号为 3 的设备结构的 `request_fn` 被赋值为硬盘请求函数 `do_hd_request` 了。
+当设备的当前请求项为空，即第一次收到硬盘操作请求时，会立即执行该设备的 `request_fn` 方法。当前设备的设备号是 3，也就是硬盘，会从 `blk_dev` 数组中取索引下标为 3 的设备结构。在 `hd_init` 已经提及设备号为 3 的`request_fn` 被赋值为硬盘请求函数 `do_hd_request` 。
 
 #figure(
 ```c
@@ -638,7 +609,9 @@ void hd_init(void) {
 caption: [hd_init]
 )
 
-所以，刚刚的 `request_fn` 背后的具体执行函数，就是这个 `do_hd_request`。去掉了一坨根据起始扇区号计算对应硬盘的磁头 `head`、柱面 `cyl`、扇区号 `sec` 等信息的代码。
+==== `do_hd_request`
+
+所以，刚刚的 `request_fn` 背后的具体执行函数，就是这个 `do_hd_request`。去掉了根据起始扇区号计算对应硬盘的磁头 `head`、柱面 `cyl`、扇区号 `sec` 等信息的代码。
 
 #figure(
 ```c
@@ -688,40 +661,34 @@ static void hd_out(unsigned int drive,unsigned int nsect,unsigned int sect,
 caption: [hd_out]
 )
 
-可以看到，最底层的读盘请求就是向一堆外设端口做读写操作。这个函数实际上在 `time_init` 为了讲解与 CMOS 外设交互方式的时候讲过。
+最底层的读盘请求就是向一堆外设端口做读写操作。这个函数实际上在 `time_init` 为了讲解与 CMOS 外设交互方式的时候讲过。
+
+#tip("Tip")[
+在硬盘准备数据时，当前时间片完成就会切换到其他进程执行。
+]
 
 #align(center,
 three-line-table[
 |端口  |读                              |写|
 | -    | -                              |-|
-|0x1F0 |数据寄存器	                |数据寄存器|
-|0x1F1 |错误寄存器	                |特征寄存器|
-|0x1F2 |扇区计数寄存器	                |扇区计数寄存器|
-|0x1F3 |扇区号寄存器或 LBA 块地址 0~7	|扇区号或 LBA 块地址 0~7|
-|0x1F4 |磁道数低 8 位或 LBA 块地址 8~15	|磁道数低 8 位或 LBA 块地址 8~15|
+|0x1F0 |数据寄存器                    |数据寄存器|
+|0x1F1 |错误寄存器                    |特征寄存器|
+|0x1F2 |扇区计数寄存器                    |扇区计数寄存器|
+|0x1F3 |扇区号寄存器或 LBA 块地址 0~7    |扇区号或 LBA 块地址 0~7|
+|0x1F4 |磁道数低 8 位或 LBA 块地址 8~15    |磁道数低 8 位或 LBA 块地址 8~15|
 |0x1F5 |磁道数高 8 位或 LBA 块地址 16~23|磁道数高 8 位或 LBA 块地址 16~23|
-|0x1F6 |驱动器/磁头或 LBA 块地址 24~27	|驱动器/磁头或 LBA 块地址 24~27|
-|0x1F7 |命令寄存器或状态寄存器	        |命令寄存器|
+|0x1F6 |驱动器/磁头或 LBA 块地址 24~27    |驱动器/磁头或 LBA 块地址 24~27|
+|0x1F7 |命令寄存器或状态寄存器            |命令寄存器|
 ]
 )
 
 读硬盘就是，往除了第一个以外的后面几个端口写数据，告诉要读硬盘的哪个扇区，读多少。然后再从 `0x1F0` 端口一个字节一个字节的读数据。这就完成了一次硬盘读操作。
 
-从 `0x1F0` 端口读出硬盘数据，是在硬盘读好数据并放在 `0x1F0` 后发起的硬盘中断，进而执行硬盘中断处理函数里进行的。在 `hd_init` 的时候，将 `hd_interrupt` 设置为了硬盘中断处理函数，中断号是 `0x2E`，代码如下。
+从 `0x1F0` 端口读出硬盘数据，是在硬盘读好数据并放在 `0x1F0` 后发起的硬盘中断，进而执行硬盘中断处理函数里进行的。在 `hd_init` 的时候，将 `hd_interrupt` 设置为了硬盘中断处理函数，中断号是 `0x2E`。
 
-#figure(
-```c
-// hd.c
-void hd_init(void) {
-    ...
-    set_intr_gate(0x2E,&hd_interrupt);
-    ...
-}
-```,
-caption: [hd_init - 设置中断]
-)
+==== `hd_interrupt`
 
-所以，在硬盘读完数据后，发起 `0x2E` 中断，便会进入到 `hd_interrupt` 方法里。
+在硬盘读完数据后，发起 `0x2E` 中断，便会进入到 `hd_interrupt` 方法里。
 
 #figure(
 ```c
@@ -737,7 +704,7 @@ _hd_interrupt:
 caption: [hd_interrupt]
 )
 
-这个方法主要是调用 `do_hd` 方法，这个方法是一个指针，就是高级语言里所谓的接口，读操作的时候，将会指向 `read_intr` 这个具体实现。
+这个方法主要是调用 `do_hd` 方法，这个方法是一个函数指针，读操作的时候，将会指向 `read_intr` 这个具体实现。
 
 #figure(
 ```c
@@ -788,6 +755,7 @@ static void read_intr(void) {
 ```,
 caption: [read_intr]
 )
+
 使用了 `port_read` 宏定义的方法，从端口 `HD_DATA` 中读 256 次数据，每次读一个字，总共就是 512 字节的数据。
 - 如果没有读完发起读盘请求时所要求的字节数，那么直接返回，等待下次硬盘触发中断并执行到 `read_intr` 即可。
 - 如果已经读完了，就调用 `end_request` 方法将请求项清除掉，然后再次调用 `do_hd_request` 方法循环往复。
@@ -816,7 +784,7 @@ caption: [end_request]
 )
 
 两个 `wake_up` 方法。
-- 第一个唤醒了该请求项所对应的进程 `&CURRENT->waiting`，告诉这个进程这个请求项的读盘操作处理完了，你继续执行吧。
+- 第一个唤醒了该请求项所对应的进程 `&CURRENT->waiting`，告诉这个进程这个请求项的读盘操作处理完了，继续执行吧。
 - 另一个是唤醒了因为 `request` 队列满了没有将请求项插进来的进程 `&wait_for_request`。
 
 随后，将当前设备的当前请求项 `CURRENT`，即 `request` 数组里的一个请求项 `request` 的 `dev` 置空，并将当前请求项指向链表中的下一个请求项。
@@ -828,11 +796,13 @@ caption: [end_request]
 
 当设备的当前请求项为空时，也就是没有在执行的块设备请求项时，`ll_rw_block` 就会在执行到 `add_request` 方法时，直接执行 `do_hd_request` 方法发起读盘请求。
 
-如果已经有在执行的请求项了，就插入 `request` 链表中。 `do_hd_request` 方法执行完毕后，硬盘发起读或写请求，执行完毕后会发起硬盘中断，进而调用 `read_intr` 中断处理函数。`read_intr` 会改变当前请求项指针指向 `request` 链表的下一个请求项，并再次调用 `do_hd_request` 方法。所以 `do_hd_request` 方法一旦调用，就会不断处理 `request` 链表中的一项一项的硬盘请求项，这个循环就形成了！
+如果已经有在执行的请求项了，就插入 `request` 链表中。 `do_hd_request` 方法执行完毕后，硬盘发起读或写请求，执行完毕后会发起硬盘中断，进而调用 `read_intr` 中断处理函数。
+
+`read_intr` 会改变当前请求项指针指向 `request` 链表的下一个请求项，并再次调用 `do_hd_request` 方法。所以 `do_hd_request` 方法一旦调用，就会不断处理 `request` 链表中的一项一项的硬盘请求项，这个循环就形成了！
 
 === `put_fs_byte`：将 `bread` 读入的缓冲块数据复制到用户指定的内存中
 
-现在已经成功地把硬盘中的一个数据块的数据，一个字节都不差地复制到了我们刚刚申请好的缓冲区里。
+现在已经成功地把硬盘中的一个数据块的数据，一个字节都不差地复制到了刚刚申请好的缓冲区里。
 
 #figure(
 ```c
@@ -881,7 +851,7 @@ caption: [put_fs_byte - 美化版]
 
 其实就是三个汇编指令的 `mov` 操作。
 
-至此，我们就将数据从硬盘读入缓冲区，再从缓冲区读入用户内存
+至此，就将数据从硬盘读入缓冲区，再从缓冲区读入用户内存
 #figure(caption: [])[#image("images/chapter40-7.png", width: 60%)]
 
 首先通过 `verify_area` 对内存做了校验，需要写时复制的地方在这里提前进行。接下来，`file_read` 方法做了读盘的全部操作，通过 `bmap` 获取到了硬盘全局维度的数据块号，然后 `bread` 将数据块数据复制到缓冲区，然后 `put_fs_byte` 再将缓冲区数据复制到用户内存。

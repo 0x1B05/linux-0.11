@@ -96,7 +96,7 @@ caption: [tty_intr]
 caption: [signal.h]
 )
 
-这里把 Linux 0.11 支持的信号都放出来了，有熟悉的按下 `CTRL+C` 时的信号 `SIGINT`，有我们通常杀死进程时 `kill -9` 的信号 `SIGKILL`，还有 core dump 内存访问出错时经常遇到的 `SIGSEGV`。
+这里把 Linux 0.11 支持的信号都放出来了，有熟悉的按下 `CTRL+C` 时的信号 `SIGINT`，有通常杀死进程时 `kill -9` 的信号 `SIGKILL`，还有 core dump 内存访问出错时经常遇到的 `SIGSEGV`。
 
 在现代 Linux 操作系统中，输入个 `kill -l` 便可知道你所在的系统所支持的信号，下面是我在我购买的一台腾讯云主机上的结果。
 #figure(caption: [])[#image("images/chapter41-1.png", width: 80%)]
@@ -156,7 +156,7 @@ caption: [sigaction]
 
 只需要给 `sigaction` 对应位置处填写上信号处理函数即可。那么如何注册这个信号处理函数呢，通过调用 `signal` 这个库函数即可。
 
-我们可以写一个小程序。
+写一个小程序。
 
 #figure(
 ```c
@@ -177,7 +177,7 @@ int main(int argc, char ** argv) {
 caption: [signal - demo]
 )
 
-这是个死循环的 `main` 函数，只不过，通过 `signal` 注册了 `SIGINT` 的信号处理函数，里面做的事情仅仅是打印一下信号值。编译并运行它，我们会发现在按下 `CTRL+C` 之后程序不再退出，而是输出了我们 `printf` 的话。
+这是个死循环的 `main` 函数，只不过，通过 `signal` 注册了 `SIGINT` 的信号处理函数，里面做的事情仅仅是打印一下信号值。编译并运行它，发现在按下 `CTRL+C` 之后程序不再退出，而是仅仅 `printf` 。
 #figure(caption: [])[#image("images/chapter41-2.png", width: 50%)]
 
 多次按 CTRL+C，这个程序仍然不会退出，会一直输出上面的话。
@@ -207,5 +207,3 @@ caption: [signal - demo2]
 )
 
 这次按下第二次 `CTRL+C` 程序就会退出了，这也间接证明了，当没有为 `SIGINT` 注册信号处理函数时，程序接收到 `CTRL+C` 的 `SIGINT` 信号时便会退出。
-
-#pagebreak()
