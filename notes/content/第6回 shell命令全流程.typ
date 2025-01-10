@@ -675,7 +675,7 @@ void wake_up (struct task_struct **p) {
     (**p).state = 0;
 }
 ```,
-caption: [sleep_on]
+caption: [sleep_on && wake_up]
 )
 
 `sleep_on` 函数除了改变 `state` 状态之外，还有些其他的操作

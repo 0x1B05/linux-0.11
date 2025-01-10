@@ -361,19 +361,19 @@ int file_read(struct m_inode * inode, struct file * filp, char * buf, int count)
 }
 // buffer.c
 // dev设备号(inode->i), block数据块号(nr)
-struct buffer_head * bread(int dev,int block) {
-    struct buffer_head * bh = getblk(dev,block);
+struct buffer_head * bread(int dev,int block)
+{
+    struct buffer_head * bh;
+    if (!(bh=getblk(dev,block)))
+        panic("bread: getblk returned NULL\n");
     if (bh->b_uptodate)
         return bh;
+    // 否则我们就调用底层快设备读写ll_rw_block函数，产生读设备块请求。
     ll_rw_block(READ,bh);
-    wait_on_buffer(bh);
-    if (bh->b_uptodate)
-        return bh;
-    brelse(bh);
-    return NULL;
+    ...
 }
 ```,
-caption: [bread]
+caption: [bread - part1]
 )
 
 `bread` 方法就是根据一个设备号 `dev` 和一个数据块号 `block`，将这个数据块的数据，从硬盘复制到缓冲区里(`buffer_init`里提及)。 而 `getblk` 方法，就是根据设备号 `dev` 和数据块号 `block`，申请到一个缓冲块。
@@ -457,6 +457,7 @@ caption: [getblk]
 
 === `ll_rw_block`:把硬盘中的数据读取到`buf`
 
+可以看到`ll_rw_block`->`make_request`->`add_request`->`do_hd_request`->`hd_out`的调用链
 #figure(
 ```c
 // buffer.c
@@ -555,6 +556,8 @@ caption: [struct request]
 #figure(caption: [])[#image("images/chapter40-9.png", width: 30%)]
 
 有了这些参数，底层方法拿到这个结构之后，就知道怎么样访问硬盘了。那是谁不断从这个 `request` 队列中取出 `request` 结构并对硬盘发起读请求操作的呢？这里 Linux 0.11 有个很巧妙的设计。
+
+==== `add_request`
 
 注意到 `add_request` 方法有如下分支。
 
@@ -684,9 +687,119 @@ three-line-table[
 
 读硬盘就是，往除了第一个以外的后面几个端口写数据，告诉要读硬盘的哪个扇区，读多少。然后再从 `0x1F0` 端口一个字节一个字节的读数据。这就完成了一次硬盘读操作。
 
-从 `0x1F0` 端口读出硬盘数据，是在硬盘读好数据并放在 `0x1F0` 后发起的硬盘中断，进而执行硬盘中断处理函数里进行的。在 `hd_init` 的时候，将 `hd_interrupt` 设置为了硬盘中断处理函数，中断号是 `0x2E`。
+从 `0x1F0` 端口读出硬盘数据，是在硬盘读好数据并放在 `0x1F0` 后发起的硬盘中断，进而执行硬盘中断处理函数里进行的。在 `hd_init` 的时候，已经将 `hd_interrupt` 设置为硬盘中断处理函数，中断号是 `0x2E`。
 
-==== `hd_interrupt`
+=== `wait_on_buffer`: 挂起当前进程直到 I/O 完成（缓冲区解锁）
+
+经历了`ll_rw_block`->`make_request`->`add_request`->`do_hd_request`->`hd_out`的调用链后，硬盘已经开始准备数据，主流程返回到`wait_on_buffer`
+
+#figure(
+```c
+// dev设备号(inode->i), block数据块号(nr)
+struct buffer_head * bread(int dev,int block)
+{
+    // 调用底层快设备读写ll_rw_block函数，产生读设备块请求。
+    ll_rw_block(READ,bh);
+    // 然后等待指定数据块被读入，并等待缓冲区解锁。(在这里就切换到了其他进程执行, 等待硬盘准备好数据发中断)
+    wait_on_buffer(bh);
+    // 在睡眠醒来之后，如果该缓冲区已更新，则返回缓冲区头指针，退出。否则表明读设备操作失败，于是释放该缓冲区，返回NULL，退出。
+    if (bh->b_uptodate)
+        return bh;
+    // 释放缓冲区
+    brelse(bh);
+    return NULL;
+}
+```,
+caption: [bread - part2]
+)
+
+`wait_on_buffer`主要就是等待指定缓冲块解锁，来看看`wait_on_buffer`的细节
+#figure(
+```c
+static inline void wait_on_buffer(struct buffer_head * bh)
+{
+    cli();                          // 关中断
+    while (bh->b_lock)              // 如果已被上锁则进程进入睡眠，等待其解锁
+        sleep_on(&bh->b_wait);
+    sti();                          // 开中断
+}
+```,
+caption: [wait_on_buffer]
+)
+
+如果指定的缓冲块`bh`已经上锁(说明硬盘需要准备数据)就让进程不可中断地睡眠在该缓冲块的等待队列`b_wait`中。(此时在`sleep_on`中就会调度其他进程执行)在缓冲块解锁时，其等待队列上的所有进程将被唤醒。
+
+#figure(
+```c
+// sched.c
+void sleep_on (struct task_struct **p) {
+    struct task_struct *tmp;
+    ...
+    tmp = *p;
+    *p = current;
+    current->state = TASK_UNINTERRUPTIBLE;
+    schedule();
+    if (tmp)
+        tmp->state = 0;
+}
+```,
+caption: [sleep_on]
+)
+
+虽然是在关闭中断(`cli`)之后去睡眠的，但这样做并不会影响在其他进程上下文中影响中断。因为每个进程都在自己的TSS段中保存了标志寄存器`EFLAGS`的值，所以在进程切换时CPU中当前EFLAGS的值也随之改变。使用`sleep_on`进入睡眠状态的进程需要用`wake_up`明确地唤醒。
+
+==== `make_request`: 缓冲区上锁
+
+那缓冲区是什么时候上锁的呢？是在`make_request`中：
+
+#figure(
+```c
+static void make_request(int major,int rw, struct buffer_head * bh)
+{
+    struct request * req;
+    int rw_ahead;
+        ...
+    lock_buffer(bh);
+    if ((rw == WRITE && !bh->b_dirt) || (rw == READ && bh->b_uptodate)) {
+        unlock_buffer(bh);
+        return;
+    }
+}
+```,
+caption: [make_request]
+)
+
+首先调用 `lock_buffer` 防止其他进程对同一缓冲区进行操作。接着if语句有两个检查：
+- 写请求检查：如果是写操作，但缓冲区没有脏标记（`b_dirt` 为假），说明数据无需写回。
+- 读请求检查：如果是读操作，但缓冲区数据已经是最新（`b_uptodate` 为真），无需从设备读取数据。
+
+如果上述条件满足，就意味着不需要新的缓冲区，则解锁缓冲区并直接返回。
+
+所以上锁就说明硬盘需要准备数据。进入`lock_buffer`看看
+#figure(
+```c
+static inline void lock_buffer(struct buffer_head * bh)
+{
+    cli(); // 关中断
+    while (bh->b_lock)  // 检查锁状态：如果缓冲区已被其他进程锁定，将当前进程加入等待队列 b_wait 并休眠。
+        sleep_on(&bh->b_wait);  // 睡眠等待: 直到锁被释放（unlock_buffer 唤醒），当前进程会重新被调度执行。
+    bh->b_lock=1; // 锁定当前缓冲区
+    sti();
+}
+
+static inline void unlock_buffer(struct buffer_head * bh)
+{
+    // 缓冲区本身没上锁
+    if (!bh->b_lock)
+        printk("ll_rw_block.c: buffer not locked\n\r");
+    bh->b_lock = 0; // 清除缓冲区中的锁
+    wake_up(&bh->b_wait); // 唤醒等待在 b_wait 队列中的所有进程，使其重新尝试获取锁。
+}
+```,
+caption: [lock_buffer && unlock_buffer]
+)
+
+=== `hd_interrupt`
 
 在硬盘读完数据后，发起 `0x2E` 中断，便会进入到 `hd_interrupt` 方法里。
 
@@ -725,7 +838,6 @@ static void hd_out(..., void (*intr_addr)(void)) {
 ```,
 caption: [hd_out]
 )
-
 `read_intr` 方法继续看。
 
 #figure(
@@ -785,7 +897,7 @@ caption: [end_request]
 
 两个 `wake_up` 方法。
 - 第一个唤醒了该请求项所对应的进程 `&CURRENT->waiting`，告诉这个进程这个请求项的读盘操作处理完了，继续执行吧。
-- 另一个是唤醒了因为 `request` 队列满了没有将请求项插进来的进程 `&wait_for_request`。
+- 另一个是唤醒了`request`队列里面有空闲位置的任务，因为 `request` 队列满了没有将请求项插进来的进程`&wait_for_request`。
 
 随后，将当前设备的当前请求项 `CURRENT`，即 `request` 数组里的一个请求项 `request` 的 `dev` 置空，并将当前请求项指向链表中的下一个请求项。
 #figure(caption: [])[#image("images/chapter40-10.png", width: 70%)]
